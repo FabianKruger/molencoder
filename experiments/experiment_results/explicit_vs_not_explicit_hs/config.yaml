@@ -1,0 +1,11 @@
+dataset_names:
+- tdcommons/lipophilicity-astrazeneca
+- polaris/adme-fang-hclint-1
+- novartis/adme-novartis-cyp3a4-reg
+- polaris/adme-fang-perm-1
+- polaris/adme-fang-solu-1
+model_names:
+- fabikru/model_15M_medium_ds_masking_30_predicted_hparams
+models_with_explicit_hydrogens:
+- fabikru/model_15M_medium_ds_masking_0.4_explicit_hs_predicted_hparamas
+results_folder: /home/ubuntu/smiles_encoder/experiments/explicit_vs_not_explicit_hs

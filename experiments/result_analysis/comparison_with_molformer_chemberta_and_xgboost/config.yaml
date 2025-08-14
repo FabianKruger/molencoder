@@ -1,0 +1,14 @@
+dataset_names:
+- molecularml/moleculeace-chembl236-ki
+- molecularml/moleculeace-chembl234-ki
+#...
+include_ecfp4_baseline: true
+n_folds: 5
+n_repeats: 5
+random_state: 42
+results_folder: /home/ubuntu/smiles_encoder/experiments/result_analysis/extended_advanced_comparison_to_other_models
+transformer_models:
+- fabikru/model_15M_small_ds_masking_30_predicted_hparams
+- DeepChem/ChemBERTa-77M-MLM
+- DeepChem/ChemBERTa-10M-MLM
+- ibm-research/MoLFormer-XL-both-10pct

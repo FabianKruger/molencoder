@@ -1,0 +1,46 @@
+result_folder_path: "/home/ubuntu/smiles_encoder/experiments/masking_ratios/half-of-chembl-2025-randomized-smiles-cleaned/15M/masking_0.1"
+tokenizer_folder_path: "/home/ubuntu/smiles_encoder/tokenizer"
+dataset_name: fabikru/half-of-chembl-2025-randomized-smiles-cleaned
+tokenizer_name: "character-level"
+huggingface_token: "..."
+debug: False
+masking_probability: 0.1
+
+# Parameters for TrainingArguments and ModernBertConfig in Hugging face
+training_arguments:
+    max_steps: 1000000
+    per_device_train_batch_size: 256
+    per_device_eval_batch_size: 256
+    optim: "schedule_free_adamw"
+    lr_scheduler_type: "constant"
+    learning_rate: 0.003439
+    weight_decay: 0.00001
+    fp16: True 
+    eval_strategy: "steps"
+    save_strategy: "steps"
+    eval_steps: 1953
+    save_steps: 1953
+    load_best_model_at_end: True
+    dataloader_num_workers: 32
+    dataloader_pin_memory: True 
+    warmup_steps: 1000
+    tf32: True 
+    torch_compile: True
+    eval_on_start: True
+    # dataloader_prefetch_factor: 2
+    eval_accumulation_steps: 8
+    save_total_limit: 2
+    metric_for_best_model: "eval_loss"
+    greater_is_better: False
+    gradient_accumulation_steps: 1
+    torch_compile_backend: "inductor"
+
+
+
+modern_bert_config:
+    hidden_size: 384
+    num_attention_heads: 6
+    intermediate_size: 576
+    num_hidden_layers: 12
+    global_attn_every_n_layers: 1
+    max_position_embeddings: 502

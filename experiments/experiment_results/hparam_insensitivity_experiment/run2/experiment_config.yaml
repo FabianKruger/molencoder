@@ -1,0 +1,40 @@
+dataset_name: fabikru/chembl-2025-randomized-smiles-cleaned
+debug: false
+huggingface_token: "..."
+masking_probability: 0.3
+modern_bert_config:
+  global_attn_every_n_layers: 1
+  hidden_size: 256
+  intermediate_size: 384
+  max_position_embeddings: 502
+  num_attention_heads: 4
+  num_hidden_layers: 8
+result_folder_path: /home/ubuntu/smiles_encoder/hparam_insensitivity_experiment/run2
+tokenizer_folder_path: /home/ubuntu/smiles_encoder/tokenizer
+tokenizer_name: character-level
+training_arguments:
+  dataloader_num_workers: 32
+  dataloader_pin_memory: true
+  eval_accumulation_steps: 8
+  eval_on_start: true
+  eval_steps: 976
+  eval_strategy: steps
+  fp16: true
+  gradient_accumulation_steps: 1
+  greater_is_better: false
+  learning_rate: 0.001
+  load_best_model_at_end: true
+  lr_scheduler_type: constant
+  max_steps: 1000000
+  metric_for_best_model: eval_loss
+  optim: schedule_free_adamw
+  per_device_eval_batch_size: 256
+  per_device_train_batch_size: 256
+  save_steps: 976
+  save_strategy: steps
+  save_total_limit: 2
+  tf32: true
+  torch_compile: true
+  torch_compile_backend: inductor
+  warmup_steps: 1000
+  weight_decay: 1.0e-05

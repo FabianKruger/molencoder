@@ -1,0 +1,11 @@
+dataset_names:
+- tdcommons/lipophilicity-astrazeneca
+- polaris/adme-fang-HCLint-1
+- novartis/adme-novartis-cyp3a4-reg
+model_names:
+- fabikru/model_5M_medium_ds_masking_30_bs_1028_lr0001
+- fabikru/model_5M_medium_ds_masking_30_bs_1028_lr01
+- fabikru/model_5M_medium_ds_masking_30_bs_256_lr0001
+- fabikru/model_5M_medium_ds_masking_30_bs_256_lr01
+- fabikru/model_5M_medium_ds_masking_30_predicted_hparams
+results_folder: /home/ubuntu/smiles_encoder/experiments/hparam_insensitivity_experiment

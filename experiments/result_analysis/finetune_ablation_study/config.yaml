@@ -1,0 +1,15 @@
+# Configuration for Hyperparameter Ablation Study
+# This file defines the model, datasets, and parameters for comparing fixed vs optimized hyperparameters
+
+# Model to evaluate
+model_name: "fabikru/model_15M_medium_ds_masking_30_predicted_hparams"
+
+# List of dataset names to evaluate
+dataset_names:
+  - "polaris/adme-fang-hclint-1"
+
+# Number of optimization trials for hyperparameter search
+n_trials: 20
+
+# Path to save the results
+results_folder: "/home/ubuntu/smiles_encoder/experiments/finetune_ablation_study/results" 

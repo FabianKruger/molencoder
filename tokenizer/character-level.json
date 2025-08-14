@@ -1,0 +1,850 @@
+{
+  "version": "1.0",
+  "truncation": null,
+  "padding": null,
+  "added_tokens": [
+    {
+      "id": 0,
+      "content": "[UNK]",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 1,
+      "content": "[PAD]",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 2,
+      "content": "[CLS]",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 3,
+      "content": "[SEP]",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 4,
+      "content": "[MASK]",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 6,
+      "content": "A",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 7,
+      "content": "B",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 8,
+      "content": "C",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 9,
+      "content": "D",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 10,
+      "content": "E",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 11,
+      "content": "F",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 12,
+      "content": "G",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 13,
+      "content": "H",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 14,
+      "content": "I",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 15,
+      "content": "J",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 16,
+      "content": "K",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 17,
+      "content": "L",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 18,
+      "content": "M",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 19,
+      "content": "N",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 20,
+      "content": "O",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 21,
+      "content": "P",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 22,
+      "content": "Q",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 23,
+      "content": "R",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 24,
+      "content": "S",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 25,
+      "content": "T",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 26,
+      "content": "U",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 27,
+      "content": "V",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 28,
+      "content": "W",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 29,
+      "content": "X",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 30,
+      "content": "Y",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 31,
+      "content": "Z",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 32,
+      "content": "a",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 33,
+      "content": "b",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 34,
+      "content": "c",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 35,
+      "content": "d",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 36,
+      "content": "e",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 37,
+      "content": "f",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 38,
+      "content": "g",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 39,
+      "content": "h",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 40,
+      "content": "i",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 41,
+      "content": "j",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 42,
+      "content": "k",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 43,
+      "content": "l",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 44,
+      "content": "m",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 45,
+      "content": "n",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 46,
+      "content": "o",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 47,
+      "content": "p",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 48,
+      "content": "q",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 49,
+      "content": "r",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 50,
+      "content": "s",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 51,
+      "content": "t",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 52,
+      "content": "u",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 53,
+      "content": "v",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 54,
+      "content": "w",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 55,
+      "content": "x",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 56,
+      "content": "y",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 57,
+      "content": "z",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 58,
+      "content": "0",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 59,
+      "content": "1",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 60,
+      "content": "2",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 61,
+      "content": "3",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 62,
+      "content": "4",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 63,
+      "content": "5",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 64,
+      "content": "6",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 65,
+      "content": "7",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 66,
+      "content": "8",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 67,
+      "content": "9",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 68,
+      "content": "=",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 69,
+      "content": "#",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 70,
+      "content": ":",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 71,
+      "content": "+",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 72,
+      "content": "-",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 73,
+      "content": "[",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 74,
+      "content": "]",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 75,
+      "content": "(",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 76,
+      "content": ")",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 77,
+      "content": "/",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 78,
+      "content": "\\",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 79,
+      "content": "@",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 80,
+      "content": ".",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    },
+    {
+      "id": 81,
+      "content": "%",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": true,
+      "special": false
+    }
+  ],
+  "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+      {
+        "type": "NFD"
+      },
+      {
+        "type": "Strip",
+        "strip_left": true,
+        "strip_right": true
+      }
+    ]
+  },
+  "pre_tokenizer": {
+    "type": "Split",
+    "pattern": {
+      "Regex": "A-Za-z0-9=#:+\\-\\[\\]()/\\\\@.%"
+    },
+    "behavior": "Isolated",
+    "invert": false
+  },
+  "post_processor": {
+    "type": "TemplateProcessing",
+    "single": [
+      {
+        "SpecialToken": {
+          "id": "[CLS]",
+          "type_id": 0
+        }
+      },
+      {
+        "Sequence": {
+          "id": "A",
+          "type_id": 0
+        }
+      },
+      {
+        "SpecialToken": {
+          "id": "[SEP]",
+          "type_id": 0
+        }
+      }
+    ],
+    "pair": [
+      {
+        "SpecialToken": {
+          "id": "[CLS]",
+          "type_id": 0
+        }
+      },
+      {
+        "Sequence": {
+          "id": "A",
+          "type_id": 0
+        }
+      },
+      {
+        "SpecialToken": {
+          "id": "[SEP]",
+          "type_id": 0
+        }
+      },
+      {
+        "Sequence": {
+          "id": "B",
+          "type_id": 1
+        }
+      },
+      {
+        "SpecialToken": {
+          "id": "[SEP]",
+          "type_id": 1
+        }
+      }
+    ],
+    "special_tokens": {
+      "[CLS]": {
+        "id": "[CLS]",
+        "ids": [
+          2
+        ],
+        "tokens": [
+          "[CLS]"
+        ]
+      },
+      "[SEP]": {
+        "id": "[SEP]",
+        "ids": [
+          3
+        ],
+        "tokens": [
+          "[SEP]"
+        ]
+      }
+    }
+  },
+  "decoder": {
+    "type": "Strip",
+    "content": " ",
+    "start": 0,
+    "stop": 0
+  },
+  "model": {
+    "type": "WordLevel",
+    "vocab": {
+      "[UNK]": 0,
+      "[PAD]": 1,
+      "[CLS]": 2,
+      "[SEP]": 3,
+      "[MASK]": 4,
+      "CC": 5
+    },
+    "unk_token": "[UNK]"
+  }
+}

@@ -1,0 +1,18 @@
+dataset_names:
+- tdcommons/lipophilicity-astrazeneca
+- polaris/adme-fang-hclint-1
+- novartis/adme-novartis-cyp3a4-reg
+- polaris/adme-fang-perm-1
+- polaris/adme-fang-solu-1
+model_names:
+- fabikru/model_15M_small_ds_masking_0.1_predicted_hparamas
+- fabikru/model_15M_small_ds_masking_0.15_predicted_hparamas
+- fabikru/model_15M_small_ds_masking_0.2_predicted_hparamas
+- fabikru/model_15M_small_ds_masking_30_predicted_hparams
+- fabikru/model_15M_small_ds_masking_0.4_predicted_hparamas
+- fabikru/model_15M_small_ds_masking_0.5_predicted_hparamas
+- fabikru/model_15M_small_ds_masking_0.6_predicted_hparamas
+- fabikru/model_15M_small_ds_masking_0.7_predicted_hparams
+- fabikru/model_15M_small_ds_masking_0.8_predicted_hparams
+- fabikru/model_15M_small_ds_masking_0.9_predicted_hparams
+results_folder: /home/ubuntu/smiles_encoder/experiments/additional_masking_ratios/evaluation_results

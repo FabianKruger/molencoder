@@ -1,0 +1,44 @@
+# Configuration for Polaris evaluation
+# This file defines the datasets, models, and output location for the evaluation
+
+# List of dataset names to evaluate
+dataset_names:
+  - "tdcommons/lipophilicity-astrazeneca"
+  - "polaris/adme-fang-hclint-1"
+  - "novartis/adme-novartis-cyp3a4-reg"
+  - "polaris/adme-fang-perm-1"
+  - "polaris/adme-fang-solu-1"
+
+# List of model names that use standard SMILES (without explicit hydrogens)
+model_names:
+  - "fabikru/model_15M_pubchem_1M_ds_masking_0.3_predicted_hparams"
+  - "fabikru/model_15M_chembl_1M_ds_masking_0.3_predicted_hparams"
+  - "fabikru/model_15M_smallest_ds_masking_0.3_predicted_hparams"
+  - "fabikru/model_15M_smaller_ds_masking_0.3_predicted_hparams"
+  - "fabikru/model_15M_small_ds_masking_30_predicted_hparams"
+  - "fabikru/model_15M_medium_ds_masking_30_predicted_hparams"
+  - "fabikru/model_15M_large_ds_masking_30_predicted_hparams"
+
+  # - "fabikru/model_15M_medium_ds_masking_30_predicted_hparams"
+  # - "fabikru/model_5M_large_ds_masking_0.1_predicted_hparamas"
+  # - "fabikru/model_5M_large_ds_masking_0.15_predicted_hparamas"
+  # - "fabikru/model_5M_large_ds_masking_0.2_predicted_hparamas"
+  # - "fabikru/model_5M_large_ds_masking_30_predicted_hparams"
+  # - "fabikru/model_5M_large_ds_masking_0.4_predicted_hparamas"
+  # - "fabikru/model_5M_large_ds_masking_0.5_predicted_hparamas"
+  # - "fabikru/model_5M_large_ds_masking_0.6_predicted_hparamas"
+# List of model names that require SMILES with explicit hydrogens
+models_with_explicit_hydrogens:
+  # - "fabikru/model_15M_medium_ds_masking_0.1_explicit_hs_predicted_hparamas"
+  # - "fabikru/model_15M_medium_ds_masking_0.15_explicit_hs_predicted_hparamas"
+  # - "fabikru/model_15M_medium_ds_masking_0.2_explicit_hs_predicted_hparamas"
+  # - "fabikru/model_15M_medium_ds_masking_0.3_explicit_hs_predicted_hparamas"
+  #- "fabikru/model_15M_medium_ds_masking_0.4_explicit_hs_predicted_hparamas"
+  # - "fabikru/model_15M_medium_ds_masking_0.5_explicit_hs_predicted_hparamas"
+  # - "fabikru/model_15M_medium_ds_masking_0.6_explicit_hs_predicted_hparamas"
+  # - "fabikru/model_15M_medium_ds_masking_0.7_explicit_hs_predicted_hparamas"
+
+
+
+# Path to save the results
+results_folder: "..." 

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "molencoder"
+version = "0.0.2"
+description = "A molecular encoder for SMILES representation learning."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "Fabian Krüger" }
+]
+license = { file = "LICENSE" }
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/molencoder"]

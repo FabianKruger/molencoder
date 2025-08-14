@@ -1,0 +1,20 @@
+dataset_names:
+- tdcommons/lipophilicity-astrazeneca
+- polaris/adme-fang-HCLint-1
+- novartis/adme-novartis-cyp3a4-reg
+- polaris/adme-fang-PERM-1
+- polaris/adme-fang-SOLU-1
+model_names:
+- fabikru/untrained_model_5M
+- fabikru/untrained_model_15M
+- fabikru/untrained_model_111M
+- fabikru/model_5M_small_ds_masking_30_predicted_hparams
+- fabikru/model_5M_medium_ds_masking_30_predicted_hparams
+- fabikru/model_5M_large_ds_masking_30_predicted_hparams
+- fabikru/model_15M_small_ds_masking_30_predicted_hparams
+- fabikru/model_15M_medium_ds_masking_30_predicted_hparams
+- fabikru/model_15M_large_ds_masking_30_predicted_hparams
+- fabikru/model_111M_small_ds_masking_30_predicted_hparams
+- fabikru/model_111M_medium_ds_masking_30_predicted_hparams
+- fabikru/model_111M_large_ds_masking_30_predicted_hparams
+results_folder: /home/ubuntu/smiles_encoder/experiments/cross_val_mask_30_models
