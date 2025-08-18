@@ -12,6 +12,7 @@ For complete usage examples and tutorials:
 
 - **Fill-Mask for Molecular Completion**: See `examples/fill_mask.ipynb`
 - **Fine-tuning for Regression Tasks**: See `examples/regression_finetune.ipynb`
+- **Fine-tuning for Classification Tasks**: See `examples/classification_finetune.ipynb`
 
 These notebooks contain complete tutorials with all necessary code, dependencies, and explanations.
 
