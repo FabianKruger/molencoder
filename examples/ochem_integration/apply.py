@@ -1,0 +1,353 @@
+#!/usr/bin/env python3
+"""
+Apply trained MolEncoder model to make predictions on new data.
+
+This script loads a trained MolEncoder model and applies it to make predictions
+on new SMILES data. It handles both regression and classification tasks,
+including multi-task scenarios.
+
+Usage:
+    python apply.py --config config.cfg
+
+The config.cfg file should specify:
+- 'apply_data_file': Path to CSV file with SMILES to predict
+- 'result_file': Path where prediction results will be saved
+- 'output_dir': Directory containing the trained model
+- Other training parameters to determine task type and setup
+"""
+
+import argparse
+import configparser
+import json
+import pickle
+import logging
+from pathlib import Path
+from typing import Dict, Any, List, Tuple, Optional, Union
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from datasets import Dataset
+from transformers import (
+    AutoTokenizer, 
+    AutoModelForSequenceClassification,
+    AutoModel,
+    DataCollatorWithPadding
+)
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+
+class MultiTaskClassificationModel(nn.Module):
+    """Multi-task classification model with shared encoder and multiple heads."""
+    
+    def __init__(self, model_name: str, num_labels_per_task: List[int]):
+        super(MultiTaskClassificationModel, self).__init__()
+        self.base_model = AutoModel.from_pretrained(model_name)
+        self.classifiers = nn.ModuleList([
+            nn.Linear(self.base_model.config.hidden_size, num_labels)
+            for num_labels in num_labels_per_task
+        ])
+        self.num_tasks = len(num_labels_per_task)
+        self.num_labels_per_task = num_labels_per_task
+        
+    def forward(self, input_ids, attention_mask=None, labels=None):
+        outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask)
+        pooled_output = outputs.last_hidden_state[:, 0, :]  # Always use CLS token
+        logits = [classifier(pooled_output) for classifier in self.classifiers]
+        
+        return {'logits': logits}
+
+
+class LabelScaler:
+    """Scale labels using robust scaling (median and interquartile range)."""
+    
+    def __init__(self, labels: np.ndarray):
+        """Initialize scaler with training labels."""
+        if labels.ndim == 1:
+            labels = labels.reshape(-1, 1)
+        
+        # Compute statistics ignoring NaN values
+        self.medians = np.nanmedian(labels, axis=0)
+        q1 = np.nanpercentile(labels, 25, axis=0)
+        q3 = np.nanpercentile(labels, 75, axis=0)
+        self.iqrs = q3 - q1
+        
+        # Handle zero IQR (all values are the same)
+        zero_iqr_mask = self.iqrs == 0
+        if np.any(zero_iqr_mask):
+            logger.warning(f"Found {np.sum(zero_iqr_mask)} label columns with zero IQR. Using std instead.")
+            stds = np.nanstd(labels, axis=0)
+            self.iqrs[zero_iqr_mask] = stds[zero_iqr_mask]
+            # If std is also zero, use 1 to avoid division by zero
+            self.iqrs[self.iqrs == 0] = 1.0
+    
+    def scale_labels(self, labels: np.ndarray) -> np.ndarray:
+        """Scale the labels using median and IQR, preserving NaN values."""
+        if labels.ndim == 1:
+            labels = labels.reshape(-1, 1)
+        # Scaling preserves NaN values automatically in numpy
+        scaled_labels = (labels - self.medians) / self.iqrs
+        return scaled_labels.squeeze() if scaled_labels.shape[1] == 1 else scaled_labels
+    
+    def inverse_scale(self, scaled_labels: np.ndarray) -> np.ndarray:
+        """Rescale predictions back to original scale, preserving NaN values."""
+        if scaled_labels.ndim == 1:
+            scaled_labels = scaled_labels.reshape(-1, 1)
+        # Inverse scaling preserves NaN values automatically in numpy
+        original_scale = scaled_labels * self.iqrs + self.medians
+        return original_scale.squeeze() if original_scale.shape[1] == 1 else original_scale
+
+
+def load_model_and_metadata(model_dir: Path) -> Tuple[Any, Dict[str, Any], AutoTokenizer, Optional[LabelScaler], List[str]]:
+    """Load trained model, metadata, tokenizer, and scaler."""
+    logger.info(f"Loading model from {model_dir}")
+    
+    # Load metadata
+    metadata_path = model_dir / 'metadata.json'
+    if not metadata_path.exists():
+        raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
+    
+    with open(metadata_path, 'r') as f:
+        metadata = json.load(f)
+    
+    logger.info(f"Model metadata: {metadata}")
+    
+    # Load tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    
+    # Load label columns
+    label_columns_path = model_dir / 'label_columns.txt'
+    if not label_columns_path.exists():
+        raise FileNotFoundError(f"Label columns file not found: {label_columns_path}")
+    
+    with open(label_columns_path, 'r') as f:
+        label_columns = [line.strip() for line in f.readlines()]
+    
+    # Load label scaler if regression
+    label_scaler = None
+    if not metadata['is_classification']:
+        scaler_path = model_dir / 'label_scaler.pkl'
+        if scaler_path.exists():
+            with open(scaler_path, 'rb') as f:
+                label_scaler = pickle.load(f)
+            logger.info("Loaded label scaler for regression")
+        else:
+            logger.warning("No label scaler found for regression task")
+    
+    # Load model based on task type
+    if metadata['is_classification'] and metadata.get('is_multi_task', False):
+        # Multi-task classification
+        logger.info("Loading multi-task classification model")
+        model = MultiTaskClassificationModel(
+            metadata['model_name'], 
+            metadata['num_labels_info']
+        )
+        # Load state dict
+        state_dict_path = model_dir / 'pytorch_model.bin'
+        if not state_dict_path.exists():
+            state_dict_path = model_dir / 'model.safetensors'
+            if state_dict_path.exists():
+                # For safetensors, we need to load differently
+                from safetensors.torch import load_file
+                state_dict = load_file(state_dict_path)
+                model.load_state_dict(state_dict)
+            else:
+                raise FileNotFoundError(f"Model weights not found in {model_dir}")
+        else:
+            state_dict = torch.load(state_dict_path, map_location='cpu')
+            model.load_state_dict(state_dict)
+    else:
+        # Single-task classification or regression
+        logger.info(f"Loading {'classification' if metadata['is_classification'] else 'regression'} model")
+        if metadata['is_classification']:
+            model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+        else:
+            model = AutoModelForSequenceClassification.from_pretrained(
+                model_dir, 
+                problem_type="regression"
+            )
+    
+    return model, metadata, tokenizer, label_scaler, label_columns
+
+
+def tokenize_data(data: pd.DataFrame, tokenizer: AutoTokenizer) -> Dataset:
+    """Tokenize SMILES data for prediction."""
+    logger.info(f"Tokenizing {len(data)} SMILES...")
+    
+    def tokenize_function(examples):
+        return tokenizer(
+            examples['smiles'],
+            truncation=True,
+            padding=False,  # Let DataCollator handle padding
+            max_length=502
+        )
+    
+    dataset = Dataset.from_pandas(data[['smiles']])
+    tokenized_dataset = dataset.map(tokenize_function, batched=True)
+    
+    return tokenized_dataset
+
+
+def make_predictions(
+    model: Any, 
+    dataset: Dataset, 
+    tokenizer: AutoTokenizer,
+    metadata: Dict[str, Any]
+) -> np.ndarray:
+    """Make predictions using the trained model."""
+    logger.info("Making predictions...")
+    
+    # Remove the 'smiles' column from dataset as it's not needed for prediction
+    prediction_dataset = dataset.remove_columns(['smiles'])
+    
+    # Create a temporary trainer for prediction (much cleaner approach)
+    from transformers import TrainingArguments, Trainer
+    import tempfile
+    data_collator = DataCollatorWithPadding(tokenizer)
+    
+    # Use temporary directory that gets automatically cleaned up
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Minimal training args just for prediction
+        training_args = TrainingArguments(
+            output_dir=temp_dir,
+            per_device_eval_batch_size=32,
+            dataloader_drop_last=False,
+            fp16=torch.cuda.is_available(),
+            bf16=torch.backends.mps.is_available(),
+        )
+        
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            data_collator=data_collator,
+        )
+        
+        # Use trainer.predict() - much simpler and more robust
+        predictions = trainer.predict(prediction_dataset)
+        logits = predictions.predictions
+        
+        if metadata['is_classification']:
+            if metadata.get('is_multi_task', False):
+                # Multi-task classification: get class predictions for each task
+                if isinstance(logits, list):
+                    # logits is a list of arrays for each task
+                    task_predictions = []
+                    for task_logits in logits:
+                        task_preds = np.argmax(task_logits, axis=1)
+                        task_predictions.append(task_preds)
+                    # Stack predictions: (num_tasks, batch_size) -> (batch_size, num_tasks)
+                    final_predictions = np.array(task_predictions).T
+                else:
+                    # Handle case where logits is a single array but multi-task
+                    final_predictions = np.argmax(logits, axis=-1)
+                    if final_predictions.ndim == 1:
+                        final_predictions = final_predictions.reshape(-1, 1)
+            else:
+                # Single-task classification: get class predictions
+                final_predictions = np.argmax(logits, axis=1)
+                if final_predictions.ndim == 1:
+                    final_predictions = final_predictions.reshape(-1, 1)
+        else:
+            # Regression: use logits directly
+            final_predictions = logits
+            if final_predictions.ndim == 1:
+                final_predictions = final_predictions.reshape(-1, 1)
+        
+        logger.info(f"Generated predictions with shape: {final_predictions.shape}")
+        return final_predictions
+
+
+def save_predictions(
+    predictions: np.ndarray,
+    label_columns: List[str],
+    result_file: str,
+    label_scaler: Optional[LabelScaler] = None,
+    is_classification: bool = False
+):
+    """Save predictions to CSV file."""
+    logger.info(f"Saving predictions to {result_file}")
+    
+    # Apply inverse scaling for regression
+    if not is_classification and label_scaler is not None:
+        logger.info("Applying inverse scaling to regression predictions")
+        predictions = label_scaler.inverse_scale(predictions)
+    
+    # Create DataFrame with proper column names
+    num_targets = predictions.shape[1] if predictions.ndim > 1 else 1
+    
+    if num_targets == 1:
+        predictions = predictions.reshape(-1, 1)
+    
+    # Create column names: Result0, Result1, etc.
+    column_names = [f"Result{i}" for i in range(num_targets)]
+    
+    df = pd.DataFrame(predictions, columns=column_names)
+    
+    # Save to CSV
+    df.to_csv(result_file, index=False)
+    logger.info(f"Saved {len(df)} predictions to {result_file}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Apply trained MolEncoder model for predictions')
+    parser.add_argument('--config', required=True, help='Path to configuration .cfg file')
+    
+    args = parser.parse_args()
+    
+    # Load configuration
+    config = configparser.ConfigParser()
+    config.read(args.config)
+    
+    # Get required parameters from config
+    try:
+        apply_data_file = config.get('DEFAULT', 'apply_data_file')
+        result_file = config.get('DEFAULT', 'result_file')
+        output_dir = Path(config.get('DEFAULT', 'output_dir'))
+    except (configparser.NoOptionError, KeyError) as e:
+        raise ValueError(f"Missing required parameter in config file: {e}")
+    
+    # Check if model directory exists
+    if not output_dir.exists():
+        raise FileNotFoundError(f"Model directory not found: {output_dir}")
+    
+    try:
+        # Load data to predict
+        logger.info(f"Loading data from {apply_data_file}")
+        data = pd.read_csv(apply_data_file)
+        
+        if 'smiles' not in data.columns:
+            raise ValueError("Input data must contain a 'smiles' column")
+        
+        logger.info(f"Loaded {len(data)} samples for prediction")
+        
+        # Load model and metadata
+        model, metadata, tokenizer, label_scaler, label_columns = load_model_and_metadata(output_dir)
+        
+        # Tokenize data
+        dataset = tokenize_data(data, tokenizer)
+        
+        # Make predictions (device handling is automatic in trainer.predict())
+        predictions = make_predictions(model, dataset, tokenizer, metadata)
+        
+        # Save predictions
+        save_predictions(
+            predictions, 
+            label_columns, 
+            result_file,
+            label_scaler,
+            metadata['is_classification']
+        )
+        
+        logger.info("Prediction completed successfully!")
+        
+    except Exception as e:
+        logger.error(f"Error during prediction: {e}")
+        raise
+
+
+if __name__ == '__main__':
+    main()
