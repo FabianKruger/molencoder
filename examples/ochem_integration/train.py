@@ -615,7 +615,6 @@ def train_final_model(
 
 def main():
     parser = argparse.ArgumentParser(description='Fine-tune MolEncoder for molecular property prediction')
-    parser.add_argument('--data_train', required=True, help='Path to training data CSV file')
     parser.add_argument('--config', required=True, help='Path to configuration .cfg file')
     
     args = parser.parse_args()
@@ -623,6 +622,15 @@ def main():
     # Load configuration
     config = configparser.ConfigParser()
     config.read(args.config)
+    
+    # Get training data file path from config
+    try:
+        train_data_file = config.get('DEFAULT', 'train_data_file')
+    except (configparser.NoOptionError, KeyError):
+        raise ValueError("train_data_file must be specified in the config file")
+    
+    if not train_data_file:
+        raise ValueError("train_data_file cannot be empty in the config file")
     
     # Get output directory from config
     output_dir = Path(config.get('DEFAULT', 'output_dir', fallback='./trained_model'))
@@ -654,7 +662,7 @@ def main():
         
         # Load and preprocess data
         dataset, label_scaler, label_columns, num_labels_info = load_and_preprocess_data(
-            args.data_train, is_classification
+            train_data_file, is_classification
         )
         
         # Load tokenizer and tokenize dataset (hardcoded to MolEncoder)
