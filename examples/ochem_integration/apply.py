@@ -217,7 +217,7 @@ def make_predictions(
             per_device_eval_batch_size=32,
             dataloader_drop_last=False,
             fp16=torch.cuda.is_available(),
-            bf16=torch.backends.mps.is_available(),
+            bf16=False,  # Disable bf16 for compatibility - enable if GPU supports bf16
         )
         
         trainer = Trainer(
@@ -232,33 +232,46 @@ def make_predictions(
         
         if metadata['is_classification']:
             if metadata.get('is_multi_task', False):
-                # Multi-task classification: get class predictions for each task
+                # Multi-task classification: get class predictions and probabilities for each task
                 if isinstance(logits, list):
                     # logits is a list of arrays for each task
                     task_predictions = []
+                    task_probabilities = []
                     for task_logits in logits:
+                        # Get class predictions
                         task_preds = np.argmax(task_logits, axis=1)
                         task_predictions.append(task_preds)
+                        # Get probabilities using softmax
+                        task_probs = torch.softmax(torch.tensor(task_logits), dim=1).numpy()
+                        task_probabilities.append(task_probs)
                     # Stack predictions: (num_tasks, batch_size) -> (batch_size, num_tasks)
                     final_predictions = np.array(task_predictions).T
+                    # Stack probabilities: list of (batch_size, num_classes) -> (batch_size, num_tasks, num_classes)
+                    final_probabilities = task_probabilities
                 else:
                     # Handle case where logits is a single array but multi-task
                     final_predictions = np.argmax(logits, axis=-1)
                     if final_predictions.ndim == 1:
                         final_predictions = final_predictions.reshape(-1, 1)
+                    # Compute probabilities
+                    final_probabilities = [torch.softmax(torch.tensor(logits), dim=-1).numpy()]
             else:
-                # Single-task classification: get class predictions
+                # Single-task classification: get class predictions and probabilities
                 final_predictions = np.argmax(logits, axis=1)
                 if final_predictions.ndim == 1:
                     final_predictions = final_predictions.reshape(-1, 1)
+                # Compute probabilities using softmax
+                probabilities = torch.softmax(torch.tensor(logits), dim=1).numpy()
+                final_probabilities = [probabilities]
         else:
             # Regression: use logits directly
             final_predictions = logits
             if final_predictions.ndim == 1:
                 final_predictions = final_predictions.reshape(-1, 1)
+            final_probabilities = None
         
         logger.info(f"Generated predictions with shape: {final_predictions.shape}")
-        return final_predictions
+        return final_predictions, final_probabilities
 
 
 def save_predictions(
@@ -266,26 +279,55 @@ def save_predictions(
     label_columns: List[str],
     result_file: str,
     label_scaler: Optional[LabelScaler] = None,
-    is_classification: bool = False
+    is_classification: bool = False,
+    probabilities: Optional[List[np.ndarray]] = None
 ):
     """Save predictions to CSV file."""
     logger.info(f"Saving predictions to {result_file}")
     
-    # Apply inverse scaling for regression
-    if not is_classification and label_scaler is not None:
-        logger.info("Applying inverse scaling to regression predictions")
-        predictions = label_scaler.inverse_scale(predictions)
-    
-    # Create DataFrame with proper column names
-    num_targets = predictions.shape[1] if predictions.ndim > 1 else 1
-    
-    if num_targets == 1:
-        predictions = predictions.reshape(-1, 1)
-    
-    # Create column names: Result0, Result1, etc.
-    column_names = [f"Result{i}" for i in range(num_targets)]
-    
-    df = pd.DataFrame(predictions, columns=column_names)
+    if is_classification and probabilities is not None:
+        # For classification: save probabilities directly in Result columns
+        logger.info("Saving classification probabilities in Result columns")
+        
+        # Determine number of tasks
+        num_tasks = len(probabilities)
+        
+        # Create DataFrame with probabilities
+        df_data = {}
+        
+        for task_idx, task_probs in enumerate(probabilities):
+            num_classes = task_probs.shape[1]
+            
+            if num_classes == 2:
+                # Binary classification: save probability of positive class (class 1)
+                df_data[f"Result{task_idx}"] = task_probs[:, 1]
+            else:
+                # Multi-class: save all class probabilities as a formatted string
+                prob_lists = []
+                for sample_idx in range(len(task_probs)):
+                    prob_list = task_probs[sample_idx].tolist()
+                    # Format as string list for CSV (you can change this format if needed)
+                    prob_str = str(prob_list)
+                    prob_lists.append(prob_str)
+                df_data[f"Result{task_idx}"] = prob_lists
+        
+        df = pd.DataFrame(df_data)
+        
+    else:
+        # For regression: apply inverse scaling and save continuous values
+        if not is_classification and label_scaler is not None:
+            logger.info("Applying inverse scaling to regression predictions")
+            predictions = label_scaler.inverse_scale(predictions)
+        
+        # Create DataFrame with proper column names
+        num_targets = predictions.shape[1] if predictions.ndim > 1 else 1
+        
+        if num_targets == 1:
+            predictions = predictions.reshape(-1, 1)
+        
+        # Create column names: Result0, Result1, etc.
+        column_names = [f"Result{i}" for i in range(num_targets)]
+        df = pd.DataFrame(predictions, columns=column_names)
     
     # Save to CSV
     df.to_csv(result_file, index=False)
@@ -331,7 +373,7 @@ def main():
         dataset = tokenize_data(data, tokenizer)
         
         # Make predictions (device handling is automatic in trainer.predict())
-        predictions = make_predictions(model, dataset, tokenizer, metadata)
+        predictions, probabilities = make_predictions(model, dataset, tokenizer, metadata)
         
         # Save predictions
         save_predictions(
@@ -339,7 +381,8 @@ def main():
             label_columns, 
             result_file,
             label_scaler,
-            metadata['is_classification']
+            metadata['is_classification'],
+            probabilities
         )
         
         logger.info("Prediction completed successfully!")

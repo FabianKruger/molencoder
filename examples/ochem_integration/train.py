@@ -87,6 +87,18 @@ class NaNAwareRegressionTrainer(Trainer):
 class NaNAwareClassificationTrainer(Trainer):
     """Custom trainer that handles NaN values in classification by replacing NaN with ignore index."""
     
+    def __init__(self, *args, class_weights=None, **kwargs):
+        """
+        Initialize trainer with optional class weights.
+        
+        Args:
+            class_weights: List of tensors, one per task. Each tensor contains weights for each class.
+                          For single-task: [tensor([weight_class0, weight_class1, ...])]
+                          For multi-task: [task0_weights, task1_weights, ...]
+        """
+        super().__init__(*args, **kwargs)
+        self.class_weights = class_weights
+    
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """
         Custom loss computation that handles NaN values by setting them to ignore index (-100).
@@ -120,7 +132,12 @@ class NaNAwareClassificationTrainer(Trainer):
                 # Only compute loss if there are valid labels
                 valid_indices = task_labels != -100
                 if valid_indices.any():
-                    loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
+                    # Use class weights if available
+                    task_weights = None
+                    if self.class_weights and task_idx < len(self.class_weights):
+                        task_weights = self.class_weights[task_idx].to(task_logits.device)
+                    
+                    loss_fct = nn.CrossEntropyLoss(ignore_index=-100, weight=task_weights)
                     task_loss = loss_fct(task_logits, task_labels.long())
                     total_loss += task_loss
                     valid_tasks += 1
@@ -129,10 +146,104 @@ class NaNAwareClassificationTrainer(Trainer):
             loss = total_loss / max(valid_tasks, 1) if valid_tasks > 0 else torch.tensor(0.0, device=labels.device, requires_grad=True)
         else:
             # Single-task classification - use standard CrossEntropyLoss with ignore_index
-            loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
+            weights = None
+            if self.class_weights and len(self.class_weights) > 0:
+                weights = self.class_weights[0].to(logits.device)  # Use first (and only) task weights
+                
+            loss_fct = nn.CrossEntropyLoss(ignore_index=-100, weight=weights)
             loss = loss_fct(logits.view(-1, logits.size(-1)), labels_masked.view(-1).long())
         
         return (loss, outputs) if return_outputs else loss
+
+
+def compute_class_weights(labels: np.ndarray, is_multi_task: bool = False, beta: float = 0.9999) -> List[torch.Tensor]:
+    """
+    Compute class weights using Effective Number of Samples approach.
+    
+    This method is more conservative than inverse frequency weighting and works better
+    for extremely imbalanced datasets.
+    
+    Args:
+        labels: numpy array of shape (n_samples, n_tasks) or (n_samples,) for single task
+        is_multi_task: whether this is multi-task classification
+        beta: smoothing parameter for effective number calculation (0.9999 is typical)
+    
+    Returns:
+        List of torch tensors, one per task, containing class weights
+        
+    Reference:
+        "Class-Balanced Loss Based on Effective Number of Samples" 
+        (Cui et al., CVPR 2019)
+    """
+    if labels.ndim == 1:
+        labels = labels.reshape(-1, 1)
+    
+    n_tasks = labels.shape[1]
+    class_weights = []
+    
+    logger.info(f"Computing class weights using Effective Number of Samples (β={beta}):")
+    
+    for task_idx in range(n_tasks):
+        task_labels = labels[:, task_idx]
+        
+        # Remove NaN values for weight computation
+        valid_mask = ~np.isnan(task_labels)
+        if not valid_mask.any():
+            logger.warning(f"Task {task_idx}: No valid labels, using equal weights")
+            # Default to equal weights if no valid labels
+            class_weights.append(torch.tensor([1.0, 1.0]))
+            continue
+        
+        valid_labels = task_labels[valid_mask]
+        unique_labels, counts = np.unique(valid_labels, return_counts=True)
+        
+        # Compute effective number of samples for each class
+        effective_numbers = {}
+        weights = {}
+        
+        for label, count in zip(unique_labels, counts):
+            # Effective number: (1 - β^n) / (1 - β)
+            if beta == 0:
+                effective_num = count  # No reweighting
+            else:
+                effective_num = (1.0 - beta**count) / (1.0 - beta)
+            
+            # Weight is inverse of effective number
+            weights[int(label)] = 1.0 / effective_num
+            effective_numbers[int(label)] = effective_num
+        
+        # Normalize weights to prevent extreme values
+        weight_values = list(weights.values())
+        weight_sum = sum(weight_values)
+        n_classes = len(weight_values)
+        
+        # Normalize so that weights sum to n_classes (maintains relative ratios)
+        for label in weights:
+            weights[label] = weights[label] * n_classes / weight_sum
+        
+        # Create weight tensor for all classes (0, 1, 2, ...)
+        max_class = int(max(unique_labels))
+        weight_tensor = torch.ones(max_class + 1)
+        
+        for class_idx in range(max_class + 1):
+            if class_idx in weights:
+                weight_tensor[class_idx] = weights[class_idx]
+        
+        class_weights.append(weight_tensor)
+        
+        # Log the weights and effective numbers
+        pos_samples = counts[unique_labels == 1][0] if 1 in unique_labels else 0
+        neg_samples = counts[unique_labels == 0][0] if 0 in unique_labels else 0
+        pos_weight = weights.get(1, 1.0)
+        neg_weight = weights.get(0, 1.0)
+        pos_eff = effective_numbers.get(1, 0)
+        neg_eff = effective_numbers.get(0, 0)
+        
+        logger.info(f"  Task {task_idx}: {neg_samples} negative, {pos_samples} positive samples")
+        logger.info(f"  Task {task_idx}: effective numbers = [neg: {neg_eff:.1f}, pos: {pos_eff:.1f}]")
+        logger.info(f"  Task {task_idx}: weights = [neg: {neg_weight:.3f}, pos: {pos_weight:.3f}]")
+    
+    return class_weights
 
 
 class MultiTaskClassificationModel(nn.Module):
@@ -410,6 +521,7 @@ def find_optimal_epochs(
     tokenizer, 
     num_labels_info: Any,
     is_classification: bool,
+    weighted_loss: bool = False,
     n_splits: int = 5, 
     max_epochs: int = 50
 ) -> int:
@@ -464,7 +576,7 @@ def find_optimal_epochs(
                 adam_beta2=0.999,
                 adam_epsilon=1e-8,
                 fp16=torch.cuda.is_available(),  # Use fp16 only on CUDA
-                bf16=torch.backends.mps.is_available(),  # Use bf16 on MPS devices
+                bf16=False,  # Disable bf16 for compatibility across environments - enable if GPU supports bf16
                 eval_strategy="epoch",
                 save_strategy="no",
                 max_grad_norm=1.0,
@@ -476,6 +588,12 @@ def find_optimal_epochs(
             
             # Use appropriate NaN-aware trainer
             if is_classification:
+                # Compute class weights for this fold if weighted loss is enabled
+                fold_class_weights = None
+                if weighted_loss:
+                    fold_labels = np.array([train_fold[i]['labels'] for i in range(len(train_fold))])
+                    fold_class_weights = compute_class_weights(fold_labels, is_multi_task=isinstance(num_labels_info, list))
+                
                 trainer = NaNAwareClassificationTrainer(
                     model=model,
                     args=training_args,
@@ -483,6 +601,7 @@ def find_optimal_epochs(
                     eval_dataset=val_fold,
                     data_collator=data_collator,
                     callbacks=[early_stopping, best_epoch_tracker],
+                    class_weights=fold_class_weights,
                 )
             else:
                 trainer = NaNAwareRegressionTrainer(
@@ -524,6 +643,7 @@ def train_final_model(
     tokenizer,
     num_labels_info: Any,
     is_classification: bool,
+    weighted_loss: bool,
     epochs: int,
     output_dir: Path
 ) -> Tuple[Any, Trainer]:
@@ -564,7 +684,7 @@ def train_final_model(
         adam_beta2=0.999,
         adam_epsilon=1e-8,
         fp16=torch.cuda.is_available(),  # Use fp16 only on CUDA
-        bf16=torch.backends.mps.is_available(),  # Use bf16 on MPS devices
+        bf16=False,  # Disable bf16 for compatibility across environments - enable if GPU supports bf16
         save_strategy="epoch",
         eval_strategy="no",
         save_total_limit=1,
@@ -574,11 +694,18 @@ def train_final_model(
     
     # Use appropriate NaN-aware trainer
     if is_classification:
+        # Compute class weights for balanced loss if weighted loss is enabled
+        class_weights = None
+        if weighted_loss:
+            labels = np.array([dataset[i]['labels'] for i in range(len(dataset))])
+            class_weights = compute_class_weights(labels, is_multi_task=isinstance(num_labels_info, list))
+        
         trainer = NaNAwareClassificationTrainer(
             model=model,
             args=training_args,
             train_dataset=dataset,
             data_collator=data_collator,
+            class_weights=class_weights,
         )
     else:
         trainer = NaNAwareRegressionTrainer(
@@ -658,7 +785,11 @@ def main():
         # Get classification flag from already loaded config
         is_classification = config.getboolean('DEFAULT', 'classification', fallback=False)
         
+        # Get weighted loss flag from config
+        weighted_loss = config.getboolean('DEFAULT', 'weighted_loss', fallback=False)
+        
         logger.info(f"Task type: {'Classification' if is_classification else 'Regression'}")
+        logger.info(f"Weighted loss: {'Enabled' if weighted_loss else 'Disabled'}")
         
         # Load and preprocess data
         dataset, label_scaler, label_columns, num_labels_info = load_and_preprocess_data(
@@ -673,13 +804,13 @@ def main():
         
         # Find optimal epochs
         optimal_epochs = find_optimal_epochs(
-            tokenized_dataset, model_name, tokenizer, num_labels_info, is_classification
+            tokenized_dataset, model_name, tokenizer, num_labels_info, is_classification, weighted_loss
         )
         
         # Train final model  
         final_model, final_trainer = train_final_model(
             tokenized_dataset, model_name, tokenizer, num_labels_info, 
-            is_classification, optimal_epochs, output_dir
+            is_classification, weighted_loss, optimal_epochs, output_dir
         )
         
         # Save label scaler if regression
