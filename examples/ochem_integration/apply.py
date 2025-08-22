@@ -12,15 +12,18 @@ Usage:
 The config.cfg file should specify:
 - 'apply_data_file': Path to CSV file with SMILES to predict
 - 'result_file': Path where prediction results will be saved
-- 'output_dir': Directory containing the trained model
+- 'model_tar_path': Path to the trained model tar file
 - Other training parameters to determine task type and setup
 """
 
 import argparse
 import configparser
 import json
-import pickle
 import logging
+import pickle
+import shutil
+import tarfile
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional, Union
 
@@ -33,8 +36,11 @@ from transformers import (
     AutoTokenizer, 
     AutoModelForSequenceClassification,
     AutoModel,
-    DataCollatorWithPadding
+    DataCollatorWithPadding,
+    TrainingArguments,
+    Trainer
 )
+from safetensors.torch import load_file
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -140,28 +146,28 @@ def load_model_and_metadata(model_dir: Path) -> Tuple[Any, Dict[str, Any], AutoT
     
     # Load model based on task type
     if metadata['is_classification'] and metadata.get('is_multi_task', False):
-        # Multi-task classification
+        # Multi-task classification - we need to manually load since it's a custom model
         logger.info("Loading multi-task classification model")
         model = MultiTaskClassificationModel(
             metadata['model_name'], 
             metadata['num_labels_info']
         )
-        # Load state dict
-        state_dict_path = model_dir / 'pytorch_model.bin'
-        if not state_dict_path.exists():
-            state_dict_path = model_dir / 'model.safetensors'
-            if state_dict_path.exists():
-                # For safetensors, we need to load differently
-                from safetensors.torch import load_file
-                state_dict = load_file(state_dict_path)
-                model.load_state_dict(state_dict)
-            else:
-                raise FileNotFoundError(f"Model weights not found in {model_dir}")
-        else:
-            state_dict = torch.load(state_dict_path, map_location='cpu')
+        # Load the saved state dict - Hugging Face Trainer saves as pytorch_model.bin or model.safetensors
+        pytorch_model_path = model_dir / 'pytorch_model.bin'
+        safetensors_model_path = model_dir / 'model.safetensors'
+        
+        if safetensors_model_path.exists():
+            # Load safetensors format
+            state_dict = load_file(safetensors_model_path)
             model.load_state_dict(state_dict)
+        elif pytorch_model_path.exists():
+            # Load pytorch .bin format
+            state_dict = torch.load(pytorch_model_path, map_location='cpu', weights_only=False)
+            model.load_state_dict(state_dict)
+        else:
+            raise FileNotFoundError(f"Model weights not found in {model_dir}")
     else:
-        # Single-task classification or regression
+        # Single-task classification or regression - use standard Hugging Face loading
         logger.info(f"Loading {'classification' if metadata['is_classification'] else 'regression'} model")
         if metadata['is_classification']:
             model = AutoModelForSequenceClassification.from_pretrained(model_dir)
@@ -205,8 +211,6 @@ def make_predictions(
     prediction_dataset = dataset.remove_columns(['smiles'])
     
     # Create a temporary trainer for prediction (much cleaner approach)
-    from transformers import TrainingArguments, Trainer
-    import tempfile
     data_collator = DataCollatorWithPadding(tokenizer)
     
     # Use temporary directory that gets automatically cleaned up
@@ -348,13 +352,22 @@ def main():
     try:
         apply_data_file = config.get('DEFAULT', 'apply_data_file')
         result_file = config.get('DEFAULT', 'result_file')
-        output_dir = Path(config.get('DEFAULT', 'output_dir'))
+        model_tar_path = config.get('DEFAULT', 'model_tar_path')
     except (configparser.NoOptionError, KeyError) as e:
         raise ValueError(f"Missing required parameter in config file: {e}")
     
-    # Check if model directory exists
-    if not output_dir.exists():
-        raise FileNotFoundError(f"Model directory not found: {output_dir}")
+    # Check if model tar file exists
+    if not Path(model_tar_path).exists():
+        raise FileNotFoundError(f"Model tar file not found: {model_tar_path}")
+    
+    # Extract model tar file to temporary directory
+    
+    temp_model_dir = tempfile.mkdtemp(prefix='molencoder_model_')
+    output_dir = Path(temp_model_dir)
+    
+    logger.info(f"Extracting model from {model_tar_path} to temporary directory")
+    with tarfile.open(model_tar_path, 'r:gz') as tar:
+        tar.extractall(path=output_dir)
     
     try:
         # Load data to predict
@@ -390,6 +403,11 @@ def main():
     except Exception as e:
         logger.error(f"Error during prediction: {e}")
         raise
+    finally:
+        # Clean up temporary directory
+        if 'temp_model_dir' in locals():
+            logger.info("Cleaning up temporary model directory")
+            shutil.rmtree(temp_model_dir, ignore_errors=True)
 
 
 if __name__ == '__main__':

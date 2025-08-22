@@ -23,3 +23,6 @@ schedulefree>=1.2.0
 # logging - built into Python standard library
 # pickle - built into Python standard library
 # json - built into Python standard library
+# tarfile - built into Python standard library
+# shutil - built into Python standard library
+# argparse - built into Python standard library

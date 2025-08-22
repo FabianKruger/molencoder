@@ -15,15 +15,20 @@ The data_train.csv file should contain:
 
 The config.cfg file should specify:
 - 'classification': True for classification, False for regression
+- 'model_tar_path': Path where the trained model tar file will be saved
 - Other hyperparameters can be added as needed
 """
 
 import argparse
 import configparser
+import json
+import logging
+import pickle
+import shutil
+import tarfile
 import tempfile
 from pathlib import Path
 from typing import List, Tuple, Dict, Any, Optional
-import logging
 
 import numpy as np
 import pandas as pd
@@ -358,7 +363,6 @@ class BestEpochTracker(TrainerCallback):
 
 def load_config(config_path: str) -> Dict[str, Any]:
     """Load configuration from .cfg file."""
-    import configparser
     
     config_parser = configparser.ConfigParser()
     config_parser.read(config_path)
@@ -731,7 +735,6 @@ def train_final_model(
         'epochs': epochs,
     }
     
-    import json
     with open(output_dir / 'metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
     
@@ -759,9 +762,12 @@ def main():
     if not train_data_file:
         raise ValueError("train_data_file cannot be empty in the config file")
     
-    # Get output directory from config
-    output_dir = Path(config.get('DEFAULT', 'output_dir', fallback='./trained_model'))
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Get model tar path from config
+    model_tar_path = config.get('DEFAULT', 'model_tar_path', fallback='./trained_model.tar.gz')
+    
+    # Create temporary directory for training
+    temp_output_dir = tempfile.mkdtemp(prefix='molencoder_training_')
+    output_dir = Path(temp_output_dir)
     
     # Set up logging with both console and file output
     log_file = output_dir / 'training.log'
@@ -815,7 +821,6 @@ def main():
         
         # Save label scaler if regression
         if label_scaler is not None:
-            import pickle
             with open(output_dir / 'label_scaler.pkl', 'wb') as f:
                 pickle.dump(label_scaler, f)
             logger.info("Saved label scaler")
@@ -825,10 +830,32 @@ def main():
             for col in label_columns:
                 f.write(f"{col}\n")
         
-        logger.info("Training completed successfully!")
+        # Compress the trained model directory into a tar file
+        
+        logger.info(f"Compressing trained model to {model_tar_path}")
+        
+        # Ensure the parent directory of the tar file exists
+        tar_path = Path(model_tar_path)
+        tar_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with tarfile.open(model_tar_path, 'w:gz') as tar:
+            # Add all files from the output directory to the tar
+            for file_path in output_dir.rglob('*'):
+                if file_path.is_file():
+                    # Use relative path within tar
+                    arcname = file_path.relative_to(output_dir)
+                    tar.add(file_path, arcname=arcname)
+        
+        # Clean up the temporary directory
+        shutil.rmtree(temp_output_dir)
+        
+        logger.info(f"Training completed successfully! Model saved to {model_tar_path}")
         
     except Exception as e:
         logger.error(f"Training failed: {str(e)}")
+        # Clean up temporary directory on failure
+        if 'temp_output_dir' in locals():
+            shutil.rmtree(temp_output_dir, ignore_errors=True)
         raise
 
 
