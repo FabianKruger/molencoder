@@ -35,6 +35,7 @@ python apply.py --config config.cfg
 [DEFAULT]
 classification = false  # true for classification, false for regression
 weighted_loss = false  # true for class imbalance weighted loss (classification only)
+debug = false  # true to skip cross-validation and train for 1 epoch (for testing)
 train_data_file = example_data/training_data.csv # path to training data csv file
 model_tar_path = ./my_model.tar.gz # location to save the trained model file
 ```
@@ -48,6 +49,15 @@ result_file = predictions.csv
 ```
 
 **Note:** Both training and prediction parameters can be saved in the same config file. Each script will only use the parameters it needs and ignore the others.
+
+## Debug Mode
+
+The `debug` parameter is useful for quick testing and development:
+
+- **`debug = false`** (default): Full training pipeline with cross-validation to find optimal epochs
+- **`debug = true`**: Skip cross-validation and train for only 1 epoch (much faster for testing)
+
+Debug mode still applies label scaling for regression tasks but dramatically reduces training time for quick validation of data format, model architecture, and pipeline functionality.
 
 ## Examples
 

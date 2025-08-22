@@ -811,8 +811,12 @@ def main():
         # Get weighted loss flag from config
         weighted_loss = config.getboolean('DEFAULT', 'weighted_loss', fallback=False)
         
+        # Get debug flag from config
+        debug = config.getboolean('DEFAULT', 'debug', fallback=False)
+        
         logger.info(f"Task type: {'Classification' if is_classification else 'Regression'}")
         logger.info(f"Weighted loss: {'Enabled' if weighted_loss else 'Disabled'}")
+        logger.info(f"Debug mode: {'Enabled' if debug else 'Disabled'}")
         
         # Load and preprocess data
         dataset, label_scaler, label_columns, num_labels_info = load_and_preprocess_data(
@@ -825,10 +829,14 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenized_dataset = tokenize_dataset(dataset, tokenizer)
         
-        # Find optimal epochs
-        optimal_epochs = find_optimal_epochs(
-            tokenized_dataset, model_name, tokenizer, num_labels_info, is_classification, weighted_loss
-        )
+        # Find optimal epochs or use 1 epoch in debug mode
+        if debug:
+            logger.info("Debug mode: Skipping cross-validation, using 1 epoch")
+            optimal_epochs = 1
+        else:
+            optimal_epochs = find_optimal_epochs(
+                tokenized_dataset, model_name, tokenizer, num_labels_info, is_classification, weighted_loss
+            )
         
         # Train final model  
         final_model, final_trainer = train_final_model(
