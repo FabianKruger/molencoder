@@ -21,11 +21,12 @@ python apply.py --config config.cfg
 **CSV file with:**
 - `smiles`: SMILES strings
 - `Results0`, `Results1`, etc.: Target properties/labels
-- Optional: `desc0`, `desc1`, etc.: Descriptors (ignored during training)
 
 ### Prediction Data (`apply.py`)
 **CSV file with:**
 - `smiles`: SMILES strings only (no target labels needed)
+
+**Note:** Additional columns (e.g., descriptors) will be ignored by both scripts.
 
 ## Configuration
 
