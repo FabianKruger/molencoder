@@ -10,7 +10,7 @@ Usage:
 
 The data_train.csv file should contain:
 - 'smiles' column: SMILES strings
-- 'Results0', 'Results1', etc.: target labels (can be multiple for multi-task)
+- 'Result0', 'Result1', etc.: target labels (can be multiple for multi-task)
 - Optional 'desc0', 'desc1', etc.: descriptor columns (ignored)
 
 The config.cfg file should specify:
@@ -420,10 +420,10 @@ def load_and_preprocess_data(data_path: str, is_classification: bool) -> Tuple[D
     if 'smiles' not in df.columns:
         raise ValueError("Data must contain 'smiles' column")
     
-    # Find label columns (Results0, Results1, etc.)
-    label_columns = [col for col in df.columns if col.startswith('Results')]
+    # Find label columns (Result0, Result1, etc.)
+    label_columns = [col for col in df.columns if col.startswith('Result')]
     if not label_columns:
-        raise ValueError("Data must contain at least one Results column (Results0, Results1, etc.)")
+        raise ValueError("Data must contain at least one Result column (Result0, Result1, etc.)")
     
     label_columns = sorted(label_columns)  # Ensure consistent ordering
     logger.info(f"Found label columns: {label_columns}")

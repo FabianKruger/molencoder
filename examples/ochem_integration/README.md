@@ -20,7 +20,7 @@ python apply.py --config config.cfg
 ### Training Data (`train.py`)
 **CSV file with:**
 - `smiles`: SMILES strings
-- `Results0`, `Results1`, etc.: Target properties/labels
+- `Result0`, `Result1`, etc.: Target properties/labels
 
 ### Prediction Data (`apply.py`)
 **CSV file with:**
