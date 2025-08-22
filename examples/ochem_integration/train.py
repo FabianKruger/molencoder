@@ -92,6 +92,9 @@ class NaNAwareRegressionTrainer(Trainer):
             
             # Compute element-wise MSE losses (no NaN in computation now)
             loss_fct = nn.MSELoss(reduction='none')
+            # Ensure logits and labels have the same shape
+            if logits.dim() == 2 and logits.size(1) == 1:
+                logits = logits.squeeze(-1)  # Convert (batch_size, 1) to (batch_size,)
             element_losses = loss_fct(logits, labels_safe)
             
             # Zero out losses for positions that had NaN labels (no gradient flow)
@@ -601,7 +604,7 @@ def find_optimal_epochs(
                 load_best_model_at_end=False,
                 metric_for_best_model="eval_loss",
                 greater_is_better=False,
-                logging_steps=1,
+                logging_steps=10,
             )
             
             # Use appropriate NaN-aware trainer
@@ -707,7 +710,7 @@ def train_final_model(
         eval_strategy="no",
         save_total_limit=1,
         max_grad_norm=1.0,
-        logging_steps=1,
+        logging_steps=10,
     )
     
     # Use appropriate NaN-aware trainer
