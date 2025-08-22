@@ -21,6 +21,7 @@ import configparser
 import json
 import logging
 import pickle
+import random
 import shutil
 import tarfile
 import tempfile
@@ -38,13 +39,26 @@ from transformers import (
     AutoModel,
     DataCollatorWithPadding,
     TrainingArguments,
-    Trainer
+    Trainer,
+    set_seed,
 )
 from safetensors.torch import load_file
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def set_reproducible_seed(seed: int = 42):
+    """Set reproducible random seeds for all libraries."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Use transformers set_seed which also handles additional libraries
+    set_seed(seed)
+    logger.info(f"Set reproducible seed to {seed}")
 
 
 class MultiTaskClassificationModel(nn.Module):
@@ -343,6 +357,9 @@ def main():
     parser.add_argument('--config', required=True, help='Path to configuration .cfg file')
     
     args = parser.parse_args()
+    
+    # Set reproducible seed
+    set_reproducible_seed(42)
     
     # Load configuration
     config = configparser.ConfigParser()
