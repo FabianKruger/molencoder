@@ -544,7 +544,7 @@ def find_optimal_epochs(
     is_classification: bool,
     weighted_loss: bool = False,
     n_splits: int = 5, 
-    max_epochs: int = 50
+    max_epochs: int = 100
 ) -> int:
     """Find optimal number of epochs using cross-validation."""
     logger.info(f"Finding optimal epochs using {n_splits}-fold cross-validation...")
@@ -579,7 +579,7 @@ def find_optimal_epochs(
             )
         
         best_epoch_tracker = BestEpochTracker()
-        early_stopping = EarlyStoppingCallback(early_stopping_patience=3)
+        early_stopping = EarlyStoppingCallback(early_stopping_patience=3, early_stopping_threshold=0.001)
         
         with tempfile.TemporaryDirectory() as temp_dir:
             training_args = TrainingArguments(
