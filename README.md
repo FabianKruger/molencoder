@@ -35,7 +35,8 @@ The `src/` directory contains all the core code used in the paper:
 
 - **`fill_mask.ipynb`** - Demonstrates masked token prediction for molecular completion
 - **`regression_finetune.ipynb`** - Complete tutorial for fine-tuning MolEncoder on your own molecular regression tasks
-
+- **`classification_finetune.ipynb`**: - Complete tutorial for fine-tuning MolEncoder on your own molecular classification tasks
+  
 These notebooks contain all the necessary code and dependencies. Simply open them and follow along!
 
 ### Experiments (`experiments/`)
@@ -51,15 +52,13 @@ Contains all experimental data and analysis from the paper:
 If you use MolEncoder in your research, please cite:
 
 ```bibtex
-@article{placeholder,
-  title={MolEncoder: Towards Optimal Masked Language Modeling for Molecules},
-}
+@article{Krüger_Österbacka_Kabeshov_Engkvist_Tetko_2025, title={MolEncoder: Towards Optimal Masked Language Modeling for Molecules}, DOI={10.26434/chemrxiv-2025-h4w9d}, journal={ChemRxiv}, author={Krüger, Fabian Per and Österbacka, Nicklas and Kabeshov, Mikhail and Engkvist, Ola and Tetko, Igor}, year={2025}}  This content is a preprint and has not been peer-reviewed.
 ```
 
 ## Links
 
 - **Model on Hugging Face**: [`fabikru/MolEncoder`](https://huggingface.co/fabikru/MolEncoder)
-- **Paper**: [Link to paper will be here]
+- **Paper**: [ChemRxiv](https://doi.org/10.26434/chemrxiv-2025-h4w9d)
 
 ## License
 
